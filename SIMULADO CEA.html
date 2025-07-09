@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado Interativo CEA</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Estilos básicos e fontes */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #f9fafb;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            margin: 0;
+        }
+
+        /* Container Principal */
+        #quiz-container {
+            width: 100%;
+            max-width: 56rem;
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Títulos */
+        h1 {
+            font-size: 1.5rem;
+            line-height: 2rem;
+            font-weight: 700;
+            text-align: center;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #2563eb;
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Textos e Parágrafos */
+        p {
+            color: #6b7280;
+        }
+        #question-text {
+            font-size: 1.125rem;
+            color: #374151;
+            margin-bottom: 1.5rem;
+            min-height: 50px;
+        }
+        
+        /* Elementos da UI */
+        #question-counter {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+        }
+        
+        #timer {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            background-color: #eff6ff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #bfdbfe;
+            white-space: nowrap;
+        }
+        
+        #accuracy {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #166534;
+            background-color: #f0fdf4;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #bbf7d0;
+            white-space: nowrap;
+        }
+
+        /* Estilos das opções */
+        .option-item {
+            padding: 1rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .option-item:hover {
+            background-color: #f3f4f6;
+        }
+        .option-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .correct {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4 !important;
+            color: #166534 !important;
+        }
+        .incorrect {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+            color: #b91c1c !important;
+        }
+        .options-locked .option-item:not(.selected) {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Botões */
+        button {
+            width: 100%;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 2rem;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #next-btn {
+            background-color: #2563eb;
+        }
+        #next-btn:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+        #restart-btn {
+            background-color: #4b5563;
+        }
+        #restart-btn:hover {
+            background-color: #374151;
+        }
+        
+        /* Tabela da questão */
+        .question-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .question-table th, .question-table td {
+            border: 1px solid #d1d5db;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .question-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+        .gray-row {
+            background-color: #f3f4f6;
+        }
+        
+        /* Resultados */
+        #results-summary {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        #chart-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+        #results-chart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #chart-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        #score-details {
+            text-align: center;
+        }
+        
+        /* Gabarito Rápido */
+        #quick-review-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        #quick-review-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-green { background-color: #22c55e; }
+        .dot-red { background-color: #ef4444; }
+
+
+        /* Espaçamento */
+        .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+        .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .items-baseline { align-items: baseline; }
+        .hidden { display: none; }
+        .font-bold { font-weight: 700; }
+
+        /* Media Query para telas maiores (sm) */
+        @media (min-width: 640px) {
+            h1 {
+                font-size: 1.875rem;
+                line-height: 2.25rem;
+            }
+            #quiz-container {
+                padding: 2rem;
+            }
+            #results-summary {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="quiz-container">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h1>Simulado Interativo CEA</h1>
+                <p style="text-align: center; color: #6b7280;">Simulado 01</p>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; gap: 0.5rem;">
+                <div id="timer-container">
+                    <span id="timer">04:00:00</span>
+                </div>
+                <div id="accuracy-container">
+                    <span id="accuracy">Aproveitamento: -</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container da Questão -->
+        <div id="question-area">
+            <div class="flex justify-between items-baseline mb-4">
+                <h2 id="question-id"></h2>
+                <span id="question-counter"></span>
+            </div>
+            <p id="question-text"></p>
+            <div id="options-container" class="space-y-3">
+                <!-- Opções serão inseridas pelo JavaScript -->
+            </div>
+            <button id="next-btn">Confirmar Resposta</button>
+        </div>
+
+        <!-- Container de Resultados -->
+        <div id="results-area" class="hidden">
+            <h2 style="font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; text-align: center; color: #111827;">Fim do Simulado!</h2>
+            <div id="results-summary">
+                <div id="chart-container">
+                    <canvas id="results-chart"></canvas>
+                    <div id="chart-percentage"></div>
+                </div>
+                <div id="score-details">
+                    <p style="font-size: 1.125rem; color: #374151;">Sua pontuação final:</p>
+                    <p id="score" style="font-size: 3rem; line-height: 1; font-weight: 700; color: #2563eb; margin: 0.5rem 0;"></p>
+                </div>
+            </div>
+            <h3>Gabarito Rápido</h3>
+            <div id="quick-review-container"></div>
+            <h3>Revisão Detalhada</h3>
+            <div id="review-container" class="space-y-6"></div>
+            <button id="restart-btn">Refazer Simulado</button>
+        </div>
+    </div>
+
+    <script>
+        function getSimulado1Data() {
+            const q_and_a = [
+                {"id": "01 [101138]", "question": "O órgão responsável pelo controle e fiscalização dos Planos de Previdência Complementar Aberta e que pode ser acessado pelos indivíduos que queiram informações sobre os produtos disponíveis é:", "options": {"a": "a CVM-Comissão de Valores Mobiliários.", "b": "BACEN Banco Central do Brasil.", "c": "SUSEP-Superintendência de Seguros Privados.", "d": "PREVIC - Superintendência Nacional de Previdência Complementar."}},
+                {"id": "02 [101150]", "question": "Segundo a Lei Complementar nº 179, de 24 de fevereiro de 2021, a autonomia legal dada ao Bacen, exigirá maior transparência da instituição, o que poderá ser alcançado por meio de um conjunto de instrumentos, sendo que um deles é que o presidente do Banco Central deverá apresentar, em arguição pública, no primeiro e no segundo semestre de cada ano, relatório de inflação e relatório de estabilidade financeira, explicando as decisões tomadas no semestre anterior. Este relatório deverá ser apresentado no:", "options": {"a": "Conselho Monetário Nacional", "b": "Superior Tribunal Federal", "c": "Comitê de Políticas Monetárias", "d": "Senado Federal"}},
+                {"id": "03 [102522]", "question": "Segundo o Código ANBIMA de Distribuição de Produtos de Investimento, as instituições participantes estão dispensadas de observar os artigos dispostos no Código, na distribuição:", "options": {"a": "da Caderneta de Poupança.", "b": "dos Títulos Públicos Federais.", "c": "do Fundo de Investimento de Renda Fixa Simples.", "d": "do Certificado de Depósito Bancário."}},
+                {"id": "04 [202502]", "question": "Segundo o Código Anbima de Distribuição de Produtos de Investimentos, são considerados produtos de investimentos que devem seguir o código:", "options": {"a": "fundos de investimento.", "b": "fundos de investimentos e carteira administrada.", "c": "fundos de pensão.", "d": "fundos de pensão e carteira administrada."}},
+                {"id": "05 [102118]", "question": "São considerados indícios do crime de lavagem de dinheiro:<br>I - Um cliente private adquire uma debenture com remuneração de 60% CDI com prazo de vencimento em 10 anos.<br>II - Um cliente private compra um bem por R$ 40.000,00 e vende, no mesmo mês, por R$ 200.000,00.<br>Está correto o que se afirma em:", "options": {"a": "I, apenas.", "b": "II, apenas.", "c": "I e II.", "d": "Nenhuma das duas."}},
+                {"id": "06 [102228]", "question": "Gustavo, diretor da empresa XYZ, comenta a seu irmão Rodrigo, que a sua empresa será comprada pelo dobro do valor que está sendo negociada na bolsa. Com isso, seu irmão liga para o seu corretor Victório, para comprar as ações antes desta notícia ser divulgada ao mercado. Victório, sem questionar nada, executa a ordem de compra. Um mês depois, com a notícia de compra da empresa ocorrendo, Rodrigo liga novamente para seu corretor Victório e solicita a venda das ações pelo dobro do valor adquirido. Victório, novamente sem questionar nada, executa a ordem de venda e ainda o parabeniza pela operação. Após isso, Rodrigo divide o lucro com seu irmão Gustavo. Desta forma, podemos afirmar que:", "options": {"a": "Os irmãos Gustavo e Rodrigo, e o corretor Victório cometeram crime de insider trading.","b": "Os irmãos Gustavo e Rodrigo cometeram crime de insider trading, e o corretor Victório cometeu uma infração administrativa.","c": "Os irmãos Gustavo e Rodrigo cometeram crime de insider trading, e o corretor Victório não cometeu nem crime e nem infração administrativa.","d": "Não houve nenhuma ilegalidade."}},
+                {"id": "07 [103143]", "question": "A melhor definição da taxa DI é:", "options": {"a": "Meta da taxa de juros básica da economia.", "b": "Média ponderada das operações interfinanceiras, por 1 dia, lastreadas em títulos públicos federais.", "c": "Média das taxas de juros em empréstimos interbancários realizada exclusivamente entre bancos que não são do mesmo grupo financeiro.", "d": "Taxa de inflação atrelada aos preços do varejo."}},
+                {"id": "08 [203134]", "question": "Uma empresa brasileira recebeu um aporte de capital de um grupo Italiano e utilizou esses recursos para comprar um equipamento na Alemanha. A empresa alemã enviou este maquinário por uma empresa de logística americana, na qual foi cobrado da empresa brasileira a taxa de transporte e os devidos seguros. Além disso, os donos do grupo, solicitaram que os seus salários fossem depositados na Itália. Dentro da Balança de Pagamentos, os valores citados serão lançados da seguinte forma:", "options": {"a": "Por ser uma operação de compra e venda internacional, todos os valores serão lançados na Balança Comercial.", "b": "O aporte Italiano entrará na Conta Financeira. Já os demais valores (da empresa alemã, americana e os devidos salários), serão lançados dentro das Transações Correntes, mais especificamente, na Balança Comercial.", "c": "O aporte Italiano entrará na Conta Financeira, o pagamento para a empresa alemã será lançado na Balança Comercial, o valor para a empresa americana estará na Balança de Serviços e os salários na Balança de Rendas.", "d": "Não será lançado em nenhuma conta, pois a receita federal, juntamente com o COAF, considerará esta operação ilegal, pois todos os salários devem ser pagos no Brasil."}},
+                {"id": "09 [203147]", "question": "Um país que tem sua balança comercial superavitária significa que:", "options": {"a": "o total de bens exportados são inferiores ao total de bens importados.", "b": "o total de bens exportados são superiores ao total de bens importados.", "c": "tenha um maior volume de remessas de lucros e juros de empréstimos enviados para o exterior.", "d": "tenha um menor volume de remessas de lucros e juros de empréstimos enviados para o exterior."}},
+                {"id": "10 [203150]", "question": "A taxa de câmbio no Brasil, nos últimos meses, apresentou uma valorização do Real em relação ao Dólar Norte-Americano. Tal valorização produziu:", "options": {"a": "redução do déficit da conta turismo e redução da margem de ganho dos exportadores.", "b": "aumento do déficit da conta turismo e aumento da margem de ganho dos exportadores.", "c": "aumento do déficit da conta turismo e redução da margem de ganho dos exportadores.", "d": "redução do déficit da conta turismo e aumento da margem de ganho dos exportadores."}},
+                {"id": "11 [302110]", "question": "Uma indústria de metais vende equipamentos pelo valor de R$ 7.200,00, através de sua equipe de vendas. Para realizar este produto, a empresa tem um custo de matéria prima de R$ 4.000,00. Sabendo que os vendedores recebem R$ 1.000,00 por cada venda e que o imposto de renda (IRPJ) é de 15%, que o PIB gerado por essa companhia, através da ótica do valor adicionado, é de:", "options": {"a": "R$ 2.200,00", "b": "R$ 2.720,00", "c": "R$ 3.200,00", "d": "R$ 7.200,00"}},
+                {"id": "12 [302280]", "question": "Um determinado investidor deseja comprar um imóvel no valor de R$ 535 mil. Sabendo que ele possui uma aplicação financeira em Renda Fixa no valor de R$ 150 mil que rende 0,75% líquido ao mês, e que o mesmo irá realizar aportes mensais no valor de R$ 3.150,00 nessa mesma aplicação, em quantos meses ele conseguirá comprar o imóvel, caso deseja pagar à vista?", "options": {"a": "70 meses", "b": "88 meses", "c": "110 meses", "d": "170 meses"}},
+                {"id": "13 [302337]", "question": "Rafael fez um investimento de R$ 150.000,00 e recebeu o seguinte fluxo:<br>Caixa gerado no final do primeiro ano: R$ 11.250,00<br>Caixa gerado no final do segundo ano: R$ 11.250,00<br>Caixa gerado no final do terceiro ano: R$ 161.250,00<br>Considerando um custo de oportunidade de 7% ao ano, o Valor Presente Líquido (VPL) aproximado deste investimento é de:", "options": {"a": "R$ 1.968,00", "b": "+ R$1.968,00", "c": "- R$ 4.923,00", "d": "+ R$ 4.923,00"}},
+                {"id": "14 [104186]", "question": "O Comitê de Política Monetária COPOM, em ata de sua reunião ordinária informou que, diante dos sinais de forte recuperação da demanda doméstica, pode-se projetar uma elevação da média dos índices de inflação. Um especialista em investimento, após a leitura desse documento, enquanto perdurar tais expectativas quanto aos índices de inflação, recomendará a seus clientes que:<br>I - reduzam as aplicações em Letras Financeiras do Tesouro - LFT.<br>II - aumentem as aplicações indexadas ao DI.<br>III - aumentem o prazo médio das aplicações de renda fixa prefixadas.<br>Está correto o que se afirma em:", "options": {"a": "I, II e III.", "b": "II e III, apenas.", "c": "III, apenas.", "d": "II, apenas."}},
+                {"id": "15 [204120]", "question": "Um cliente possui os seguintes ativos:<br>I- LCI (Letra de Crédito Imobiliário)<br>II - LCA (Letra de Crédito do Agronegócio)<br>III - CRA (Certificado de Recebimento do Agronegócio)<br>IV - Operação Compromissada lastreada em Debêntures, emitido por empresa ligada em 2014.<br>Em relação a proteção do FGC, os ativos que possuem esta garantia são:", "options": {"a": "I e II, apenas.", "b": "II e III, apenas.", "c": "I, II e IV, apenas.", "d": "I, III e IV, apenas."}},
+                {"id": "16 [303130]", "question": "Um cliente investiu R$ 100.000,00 em um CDB com rentabilidade de 100% do CDI durante 270 dias úteis (390 dias corridos). Sabendo que no momento do resgate, a taxa do CDI do período foi de 11,75% e ele teve mais um spread de 0,65% ao ano, qual foi o valor aproximado do resgate líquido?", "options": {"a": "R$ 110.018,00", "b": "R$ 110.336,00", "c": "R$ 111.312,00", "d": "R$ 112.530,00"}},
+                {"id": "17 [303510]", "question": "Em uma operação de Repurchase Agreement, podemos afirmar que:", "options": {"a": "A taxa repo da operação é recebida pelo mutuário.", "b": "Enquanto o comprador repo deter os títulos que estão servindo de colateral da operação, os cupons que forem pagos são geralmente repassados diretamente ao vendedor da repo.", "c": "O vendedor da repo é quem recebe a taxa de juros da operação.", "d": "O comprador da repo vende os títulos no início da operação para, em um segundo momento, recompra-los pagando também a \"taxa de recompra\"."}},
+                {"id": "18 [302354]", "question": "O patrimônio líquido de uma empresa é de R$ 20.000.000,00 e sua dívida total é de R$ 90.000.000,00. A empresa tem custo médio da dívida igual a 11,00% a.a., custo de capital próprio de 18,00% a.a. e está sujeita à aliquota do Imposto de Renda de 25,00% sobre o lucro líquido. O Custo Médio Ponderado de Capital dessa empresa é, aproximadamente,", "options": {"a": "9,20% a.a.", "b": "10,02% a.a.", "c": "11,45% a.a.", "d": "12,27% a.a."}},
+                {"id": "19 [302368]", "question": "Uma empresa apresentou, ao final do último Exercício Social de 2015, as seguintes Demonstrações de Resultados dos Exercícios de 2014 e 2015:<br><table class='question-table'><thead><tr><th>Demonstração de Resultados</th><th>2015</th><th>2014</th></tr></thead><tbody><tr><td>Receita Operacional Líquida</td><td>43.500</td><td>22.000</td></tr><tr><td>Custos dos produtos vendidos</td><td>(1.700)</td><td>(12.700)</td></tr><tr><td><strong>Lucro bruto</strong></td><td><strong>21.800</strong></td><td><strong>9.300</strong></td></tr><tr><td>Receitas (despesas operacionais)</td><td></td><td></td></tr><tr><td>Despesas de Vendas</td><td>(1.600)</td><td>(1.000)</td></tr><tr><td>Despesas Administrativas</td><td>(2.600)</td><td>(1.500)</td></tr><tr><td>Despesas com depreciação</td><td>(3.000)</td><td>(1.600)</td></tr><tr><td><strong>Resultado antes das receitas (despesas) financeiras</strong></td><td><strong>14.600</strong></td><td><strong>5.200</strong></td></tr><tr><td>Despesas financeiras</td><td>(3.000)</td><td>(1.400)</td></tr><tr><td><strong>Resultado antes do imposto de renda</strong></td><td><strong>11.600</strong></td><td><strong>3.800</strong></td></tr><tr><td>Imposto de renda e contribuição social</td><td>(4.640)</td><td>(1.520)</td></tr><tr><td><strong>Lucro líquido do exercício</strong></td><td><strong>6.960</strong></td><td><strong>2.280</strong></td></tr></tbody></table><br>O Earnings Before Interest, Taxes, Depreciation and Amortization (EBITDA), em 31/12/2015, foi:", "options": {"a": "R$ 21.800,00", "b": "R$ 9.960,00", "c": "R$ 17.600,00", "d": "R$ 14.600,00"}},
+                {"id": "20 [104201-A]", "question": "Para adesão ao segmento especial de listagem Nível 1 da B3, as empresas listadas devem:", "options": {"a": "Disponibilizar balanços semestrais seguindo os padrões do IFRS.", "b": "possuir, no mínimo, 20% de conselheiros independentes no Conselho de Administração.", "c": "Comprometer-se em manter, no mínimo, 25% das suas ações em circulação no mercado.", "d": "possuir no seu capital exclusivamente ações ordinárias com direito a voto."}},
+                {"id": "21 [303239]", "question": "O quadro abaixo apresenta o preço de mercado e o lucro por ação de quatro empresas que atuam no mesmo segmento e fazem parte da carteira de um mesmo investidor.<br><table class='question-table'><thead><tr><th>Empresa</th><th>Preço de Mercado</th><th>Lucro por Ação</th></tr></thead><tbody><tr><td>X</td><td>R$ 19,00</td><td>R$ 0,82</td></tr><tr><td>Y</td><td>R$ 20,00</td><td>R$ 1,10</td></tr><tr><td>W</td><td>R$ 23,50</td><td>R$ 1,05</td></tr><tr><td>Z</td><td>R$ 19,50</td><td>R$ 1,03</td></tr></tbody></table><br>Dado: os lucros por ação das empresas se manterão constantes<br>Se o Índice Preço Lucro (P/L) médio do segmento é 19,00, um especialista em investimentos deverá recomendar, em função da análise de P/L das empresas, a:", "options": {"a": "Venda de X e W; e compra de Y", "b": "Venda de X e Y; e compra de W e Z", "c": "Venda de W e Z; e compra de X e Y", "d": "Venda de W e Y; e compra de X"}},
+                {"id": "22 [204387]", "question": "O lançador de uma opção de compra (call) de dólar norte-americano negociada na Bolsa de Valores, no vencimento, terá:", "options": {"a": "o direito de vender a moeda.", "b": "a obrigação de comprar a moeda.", "c": "a obrigação de vender a moeda.", "d": "o direito de comprar a moeda."}},
+                {"id": "23 [303323]", "question": "A operação com opções chamada Strangle se caracteriza por:", "options": {"a": "Comprar uma put e uma call do mesmo ativo-objeto, com igual vencimento, mas com preços de exercício diferentes.", "b": "Comprar uma put e uma call do mesmo ativo-objeto, com vencimento diferentes...", "c": "Comprar duas calls do mesmo ativo-objeto, com vencimentos diferentes...", "d": "Comprar duas puts do mesmo ativo-objeto, com igual vencimento..."}},
+                {"id": "24 [204145]", "question": "Uma instituição financeira acaba de emitir um COE (Certificado de Operações Estruturadas), produzindo o DIE (Documento de Informações Essenciais), que especifica as características do produto e o termo de Adesão e Ciência de Risco (TA) dessa emissão. No momento da distribuição aos investidores não profissionais, a instituição deve", "options": {"a": "obrigatoriamente entregar o DIE e colher a assinatura no TA.", "b": "opcionalmente entregar o DIE e obrigatoriamente colher a assinatura no TA.", "c": "opcionalmente entregar o DIE e colher a assinatura no TA.", "d": "obrigatoriamente entregar o DIE e opcionalmente colher a assinatura no TA."}},
+                {"id": "25 [104462]", "question": "Um pessoa física efetuou as seguintes operações com ações em Bolsa de Valores:<table class='question-table'><thead><tr><th>Empresa</th><th>Quantidade de ações</th><th>Data da Aquisição</th><th>Valor (R$)</th><th>Data da Alienação</th><th>Valor (R$)</th><th>Ganho de Capital (R$)</th></tr></thead><tbody><tr><td>A</td><td>10</td><td>14/09/2014</td><td>1.750,00</td><td>05/04/2015</td><td>2.500,00</td><td>750,00</td></tr><tr class='gray-row'><td>B</td><td>50</td><td>22/09/2014</td><td>2.400,00</td><td>09/04/2015</td><td>4.000,00</td><td>1.600,00</td></tr><tr><td>C</td><td>120</td><td>22/09/2014</td><td>6.930,00</td><td>13/04/2015</td><td>12.600,00</td><td>5.670,00</td></tr><tr class='gray-row'><td>D</td><td>60</td><td>07/10/2014</td><td>2.940,00</td><td>26/04/2015</td><td>4.200,00</td><td>1.260,00</td></tr><tr><td>E</td><td>110</td><td>19/10/2014</td><td>5.940,00</td><td>30/04/2015</td><td>9.900,00</td><td>3.960,00</td></tr><tr class='gray-row'><td><strong>TOTAL</strong></td><td></td><td></td><td><strong>19.960,00</strong></td><td></td><td><strong>33.200,00</strong></td><td><strong>13.240,00</strong></td></tr></tbody></table><br>Os ganhos de capital auferidos na alienação dessas ações estão", "options": {"a": "sujeitos à incidência do Imposto de Renda à alíquota de 20,00%.", "b": "isentos do Imposto de Renda, devido ao reduzido valor das alienações.", "c": "isentos do Imposto de Renda, devido ao reduzido valor de aquisição das ações.", "d": "sujeitos à incidência do Imposto de Renda à alíquota de 15,00%."}},
+                {"id": "26 [303416]", "question": "Guilherme comprou 50 contratos de Índice Futuro a 60.200 pontos e vendeu no mesmo dia... a 60.600 pontos. Desta forma, o valor do I.R. retido na fonte será de:", "options": {"a": "R$ 0,00", "b": "R$ 1,00", "c": "R$ 200,00", "d": "R$ 3.000,00"}},
+                {"id": "27 [303441]", "question": "Um brasileiro, residente no Brasil, comprou ações de uma empresa brasileira e também comprou ADRs de uma empresa de Londres. Caso ele receba dividendos... o Imposto de Renda que deverá ser recolhido pelo investidor... será de:", "options": {"a": "Isento e isento.", "b": "Isento e 15%.", "c": "Isento e carne leão até 27,5%.", "d": "Carne leão até 27,5% e isento."}},
+                {"id": "28 [105123]", "question": "De acordo com a Resolução CVM 175, em casos excepcionais de iliquidez dos ativos componentes da carteira, inclusive em decorrência de pedidos de resgates incompatíveis com a liquidez existente, ou que possam implicar alteração do tratamento tributário do fundo ou do conjunto dos cotistas em prejuízos destes últimos, o administrador, o gestor ou ambos, de acordo com o disposto no Regulamento, podem declarar:", "options": {"a": "a falência do fundo.", "b": "a substituição dos prestadores de serviços essenciais.", "c": "a transformação da classe aberta para classe fechada.", "d": "o fechamento da classe de cotas para realização de resgates."}},
+                {"id": "29 [105140]", "question": "A classe aberta de um fundo de investimento está investindo em renda fixa, através de CDBs de instituições financeiras e outros ativos financeiros de crédito privado. Com relação a gestão de liquidez, podemos afirmar que:", "options": {"a": "O gestor de recursos e o administrador fiduciário, conjuntamente, são responsáveis pela liquidez da classe de cotas.", "b": "O administrador fiduciário, exclusivamente, é o responsável pela liquidez da classe de cotas.", "c": "O gestor de recursos, exclusivamente, é o responsável pela liquidez da classe de cotas.", "d": "Os cotistas são responsáveis pela gestão da liquidez do fundo, através da definição do Regulamento."}},
+                {"id": "30 [105303]", "question": "Considere a rentabilidade trimestral (expressa abaixo em percentual do CDI) de duas classes tipificadas como Renda Fixa Referenciado DI.<br><table class='question-table'><thead><tr><th></th><th>Trimestre 1</th><th>Trimestre 2</th><th>Trimestre 3</th><th>Trimestre 4</th></tr></thead><tbody><tr><td>Classe A</td><td>99,80%</td><td>99,95%</td><td>100,10%</td><td>99,75%</td></tr><tr><td>Classe B</td><td>120,50%</td><td>80,10%</td><td>130,20%</td><td>75,50%</td></tr><tr><td>CDI</td><td>100,00%</td><td>100,00%</td><td>100,00%</td><td>100,00%</td></tr></tbody></table><br>Desta forma, podemos afirmar que a classe:", "options": {"a": "B é alavancado.", "b": "A apresenta retornos mais coerentes com a sua classificação.", "c": "B apresenta retornos mais coerentes com a sua classificação.", "d": "A é alavancada."}},
+                {"id": "31 [105337]", "question": "Um fundo de investimento aplica seus recursos exclusivamente em títulos públicos de longo prazo indexados ao dólar. Durante um certo período, a variação do dólar comercial à vista foi 14,5% e, no entanto, a classe rendeu apenas 8,5%. Essa diferença, provavelmente, deveu-se à:", "options": {"a": "baixa do cupom cambial no mercado brasileiro.", "b": "baixa das taxas de juro em dólar no mercado norte-americano.", "c": "alta das taxas de juro em dólar no mercado norte americano.", "d": "alta do cupom cambial no mercado brasileiro."}},
+                {"id": "32 [205202]", "question": "Dois fundos passivos de renda fixa com benchmark ao CDI apresentaram as seguintes remunerações mês a mês:<br><table class='question-table'><thead><tr><th>Mês</th><th>Fundo A</th><th>Fundo B</th></tr></thead><tbody><tr><td>Jan</td><td>100,1%</td><td>110,0%</td></tr><tr><td>Fev</td><td>99,9%</td><td>90,0%</td></tr><tr><td>Mar</td><td>100,0%</td><td>115,0%</td></tr><tr><td>Abr</td><td>100,1%</td><td>85,0%</td></tr><tr><td>Mai</td><td>99,9%</td><td>120,0%</td></tr></tbody></table>", "options": {"a": "Fundo A é mais correlacionado com seu benchmark.", "b": "Fundo B é mais correlacionado com seu benchmark.", "c": "Fundos A e B são igualmente correlacionados a seus benchmarks.", "d": "Não é possível tirarmos conclusões somente com a remuneração de cada fundo."}},
+                {"id": "33 [205314]", "question": "São características das classes:", "options": {"a": "exclusivas serem voltados para um segmento de mercado, como empresas do segmento de energia elétrica.", "b": "tipificadas como multimercados serem fechadas.", "c": "tipificadas como ações, por determinação legal, não poderem comprar cotas de outros fundos.", "d": "fechadas serem aqueles em que os cotistas não podem resgatar as suas cotas."}},
+                {"id": "34 [205323]", "question": "Avalie as alternativas abaixo à respeito dos Fundos Imobiliários (FII):<br>I - Pode ser composto por investidores de varejo ou qualificados.<br>II - As classes de cotas são constituídas sob a forma de regime fechado.<br>III - Permite a utilização de derivativos apenas para proteção de carteira.", "options": {"a": "I, apenas.", "b": "II, apenas.", "c": "I e III, apenas.", "d": "I, II e III."}},
+                {"id": "35 [205325]", "question": "Sobre o FIDC, analise as alternativas a seguir:<br>I - Somente pode investir em direitos creditórios.<br>II - Pode ser constituído como regime aberto ou fechado.<br>III - Somente pode ser objeto de oferta para investidores qualificados.<br>IV- Podem possuir cotas Subordinadas, Sênior e Ordinária", "options": {"a": "II", "b": "II e III", "c": "II, III e IV", "d": "I e IV"}},
+                {"id": "36 [105540]", "question": "A compensação de imposto de renda em aplicações em fundos de investimento pode ser:<br>I - Feita pelo investidor, mesmo que ainda não tenha vendido suas cotas com prejuízo.<br>II - Feita apenas entre fundos de mesmo tratamento tributário.<br>III - Declarada no IRPF (Imposto de Renda Pessoa Física), deduzindo a base de cálculo do imposto a ser pago, na declaração de ajuste anual.", "options": {"a": "I, apenas.", "b": "II, apenas.", "c": "I e III, apenas.", "d": "II e III, apenas."}},
+                {"id": "37 [205504]", "question": "Um investidor adquiriu cotas de um fundo de renda variável no valor de R$ 200.000,00 e, após 60 dias, as vendeu integralmente por R$ 220.000,00. Nesse caso, o agente responsável pelo recolhimento dos tributos é o:", "options": {"a": "gestor", "b": "administrador", "c": "custodiante", "d": "investidor"}},
+                {"id": "38 [105604]", "question": "Dentre as alternativas abaixo, o Código ANBIMA de Regulação e Melhores Práticas para Administração de Recursos de Terceiros não se aplica:", "options": {"a": "Clube de Investimentos, apenas.", "b": "Fundo Exclusivo, apenas.", "c": "FIP, apenas.", "d": "FIP e Clube de Investimentos."}},
+                {"id": "39 [105617]", "question": "De acordo com o Código Anbima de Administração de Recursos de Terceiros, representam obrigações do Gestor de Recursos:", "options": {"a": "elaboração de todos os documentos relacionados aos fundos.", "b": "constituição, administração, funcionamento e divulgação de informações dos fundos.", "c": "negociação, alocação e rateio das ordens dos veículos de investimento, quando aplicável.", "d": "controle dos ativos financeiros da carteira, despesas e encargos sobre eles incidentes."}},
+                {"id": "40 [105627]", "question": "O apreçamento é definido, segundo o Código Anbima de Regulação e Melhores Práticas para Administração e Gestão de Recursos de Terceiros, como a precificação dos ativos de fundos de investimentos, pelo:", "options": {"a": "preço médio, se esses ativos pertencerem a classe de renda fixa ou pelo preço de fechamento do mercado.", "b": "preço de aquisição, se esses ativos pertencerem a classe de renda fixa ou pelo preço médio se forem de renda variável.", "c": "preço de mercado, se esses ativos forem líquidos ou por estimativa, se forem ilíquidos.", "d": "preço de fechamento, se esses ativos forem líquidos ou pelo último preço negociado, se forem ilíquidos."}},
+                {"id": "41 [106302]", "question": "A portabilidade permite que haja transferências:", "options": {"a": "De PGBL para PGBL, de VGBL para VGBL, de PGBL para VGBL, de VGBL para PGBL, todas sem imposto de renda.", "b": "Sem imposto de renda quando for PGBL para PGBL, ou de VGBL para VGBL. Com imposto de renda quando for de PGBL para VGBL, ou de VGBL para PGBL.", "c": "De PGBL para PGBL, de VGBL para VGBL com imposto de renda.", "d": "De PGBL para PGBL, de VGBL para VGBL sem imposto de renda."}},
+                {"id": "42 [106340]", "question": "Guilherme possui um plano de previdência do tipo PGBL no qual investe 100% dos recursos em renda fixa. Certo dia, ele vai ao banco e informa ao seu gerente que agora ele está mais propenso ao risco e gostaria de trocar sua aplicação para um outro plano de previdência que aplique até 30% em renda variável. Desta forma, o gerente poderia informar que ele:", "options": {"a": "Poderá trocar de perfil e realizar a portabilidade para outro plano, porém haverá cobrança de Imposto de Renda no momento da realização da transferência.", "b": "Poderá trocar de perfil e realizar a portabilidade para outro plano, não havendo cobrança de Imposto de Renda no momento da realização da transferência, caso ele permaneça em um plano do tipo PGBL.", "c": "Uma vez definido o perfil do investidor em planos de previdência, não poderá mais ser feita a portabilidade para planos mais arrojados, mas poderá resgatar os recursos pagando imposto de renda e realizar novos aportes em planos mais arrojados.", "d": "Poderia trocar de plano fazendo uma portabilidade sem cobrança de imposto de renda, desde que contratasse um seguro de vida também."}},
+                {"id": "43 [106522]", "question": "Um cliente possui dois planos de previdência com os mesmos valores acumulados e mesmos prazos, decidiu fazer um resgate total. O primeiro plano era um PGBL regressivo e o segundo, um VGBL progressivo. No momento dele realizar o resgate, o cliente pergunta ao seu gerente como ele deverá declarar esses valores no seu Imposto de Renda. Este gerente responde corretamente que os valores resgatados deverão ser declarados, respectivamente, em:", "options": {"a": "Rendimentos Tributáveis recebidos de Pessoa Jurídica e Rendimentos Sujeitos à Tributação Exclusiva.", "b": "Rendimentos Sujeitos à Tributação Exclusiva e Rendimentos Tributáveis recebidos de Pessoa Jurídica.", "c": "Rendimentos Sujeitos à Tributação Exclusiva, ambos os valores.", "d": "Rendimentos Tributáveis recebidos de Pessoa Jurídica, ambos os valores."}},
+                {"id": "44 [106606]", "question": "João tem 55 anos e pretende se aposentar aos 60 anos de idade. Ele possui um plano de previdência privada AT 83+0%, com tabela regressiva, e tem intuito de converter os recursos em uma renda temporária por 20 anos. Certo dia, um assessor de investimentos, que é amigo do seu filho, oferta a portabilidade desses recursos a outra instituição financeira, pois possui uma taxa de administração menor. Sabendo que ele já contribui há mais de 15 anos neste plano, João:", "options": {"a": "Deve realizar a portabilidade apenas se a tábua atuarial for igual ou mais antiga que a atual.", "b": "Deve realizar a portabilidade apenas se a tábua atuarial for igual ou mais nova que a atual.", "c": "Deve realizar a portabilidade, pois nesse tipo de renda, é indiferente a tábua atuarial.", "d": "Não deve realizar a portabilidade, pois ele já contribui há mais de 10 anos no plano atual e faria ele recomeçar do zero a contagem da tabela regressiva."}},
+                {"id": "45 [305201]", "question": "Um investidor deseja na sua aposentadoria, uma renda vitalícia de R$ 10.000,00. Sabendo que o INSS pagará uma aposentadoria de R$ 2.800,00, quanto ele precisará ter acumulado? Considere que a taxa da aplicação renderá 0,60% ao mês e o imposto de renda sobre as aplicações de 15%.", "options": {"a": "R$ 1.200.000,00", "b": "R$ 1.411.764,00", "c": "R$ 1.454.681,00", "d": "R$ 1.960.784,00"}},
+                {"id": "46 [305211]", "question": "Guilherme tem o desejo de atingir sua independência financeira em 25 anos. Ele lhe informa que já tem acumulado R$ 100.000,00 e que, para atingir seu objetivo, necessita de uma renda perpétua de R$ 20.000,00 mensais. Na sua projeção, ele estima que os recursos terão um retorno mensal de 0,80% a partir de hoje. Diante dessas informações, para que ele possa atingir seu objetivo, Guilherme deveria fazer aportes mensais até a sua independência financeira no valor aproximado de:", "options": {"a": "R$ 1.135,00", "b": "R$ 2.016,00", "c": "R$ 2.897,00", "d": "R$ 14.245,00"}},
+                {"id": "47 [305524]", "question": "Rafael possui uma renda tributável de R$ 120.000,00 por ano e lhe diz que deseja fazer um uma previdência para o filho ter uma renda mensal de R$ 1.000,00 para custear a faculdade daqui 5 anos. Sabendo que ele já contribuiu R$ 15.000,00 no ano em um PGBL em seu nome, qual das seguintes alternativas é a mais recomendada?", "options": {"a": "VGBL tabela progressiva.", "b": "VGBL tabela regressiva.", "c": "PGBL tabela progressiva.", "d": "PGBL tabela regressiva."}},
+                {"id": "48 [305525]", "question": "Rafael contribuiu R$ 1.350,00 por mês durante 15 anos em um VGBL. Sabendo que ele deseja resgatar todo o valor acumulado e teve uma rentabilidade bruta de 8% ao ano, qual o valor aproximado do imposto de renda que lhe será descontado na fonte, sabendo que ele havia optado pela tabela compensável?", "options": {"a": "R$ 21.276,00", "b": "R$ 31.915,00", "c": "R$ 45.576,00", "d": "R$ 68.365,00"}},
+                {"id": "49 [306313]", "question": "Uma carteira aplica no ativo A com retorno esperado de 10%, no ativo B com retorno esperado de 12% e no ativo C com retorno esperado de 20%. Qual é o retorno esperado da carteira se os pesos dos ativos A, B e C são respectivamente 60%, 30% e 10%?", "options": {"a": "11,6%", "b": "14,0%", "c": "16,6%", "d": "Não é possível calcular o retorno esperado sem saber as covariâncias entre os retornos dos produtos"}},
+                {"id": "50 [306301]", "question": "Analisando os ativos abaixo, qual a melhor escolha para um investidor racional segundo o princípio da dominância?<br>Ativo X: 50% de retorno de 30%; 50% de render 0.<br>Ativo Y: 100% de render 15%.", "options": {"a": "Se o investidor for neutro ao risco, será indiferente na escolha.", "b": "Se o investidor for avesso ao risco, escolherá o ativo X.", "c": "Se o investidor for propenso ao risco, escolherá o ativo Y", "d": "Sempre será indiferente a escolha do investidor"}},
+                {"id": "51 [306361]", "question": "Um investidor possui R$ 20.000,00 no ativo X e R$ 50.000,00 no ativo Y, no qual possuem, respectivamente, volatilidade de 15% e de 5%. Sabendo que esses ativos possuem um coeficiente de correlação de 0,65, você como profissional do mercado financeiro, responde ao cliente que o risco da carteira é de:", "options": {"a": "1,89%", "b": "5,16%", "c": "7,14%", "d": "8,77%"}},
+                {"id": "52 [306513]", "question": "Um investidor possui as seguintes aplicações:<br>Recentemente, o Especialista em Investimentos deste cliente, participou de uma reunião da sua instituição financeira que acreditam que a inflação tende a aumentar bastante pelos próximos meses. Com base nessa expectativa e dentre as alternativas abaixo, este profissional deveria recomendar ao investidor:", "options": {"a": "Vender a NTN-F; e comprar LFT e LTN.", "b": "Vender LFT; e comprar LTN e NTN-F.", "c": "Vender LTN e NTN-F; e comprar LFT.", "d": "Manter a carteira com está."}},
+                {"id": "53 [306506]", "question": "Um comitê de um fundo de pensão se reúne a cada 6 meses para fazer o rebalanceamento da carteira. Em janeiro de 2020, eles se reuniram e perceberam que a composição do fundo não estava de acordo com a política de investimentos. No entanto, durante a reunião, decidiram não rebalancear conforme a política de investimentos, mantendo a carteira como estava, conforme tabela abaixo:<br>Diante dessa decisão, o retorno que o fundo teve e a diferença do retorno apresentado por não rebalancear os pesos nesses últimos 6 meses foram de:", "options": {"a": "-18,80%; - 0,82%", "b": "-18,80%; + 0,82%", "c": "-19,62%; - 0,82%", "d": "-19,62%; + 0,82%"}},
+                {"id": "54 [306360]", "question": "Sobre a Capital Market Line (CML), assinale a alternativa correta:", "options": {"a": "É a fronteira eficiente.", "b": "É onde localizam-se as carteiras com a maior rentabilidade possível.", "c": "É a carteira de mercado, onde o investidor estará 100% comprado em mercado.", "d": "É uma evolução ao Modelo de Markowitz, ao adicionar um ativo livre de risco à fronteira eficiente"}},
+                {"id": "55 [306601]", "question": "Qual das instituições abaixo, possui menor risco de insolvência?", "options": {"a": "A", "b": "B", "c": "C", "d": "D"}},
+                {"id": "56 [207303]", "question": "A perda do VaR (Value at Risk) da carteira investimentos de um cliente, já superou em 8%. Qual o procedimento correto que o gestor contratado deve tomar?", "options": {"a": "Se valer de derivativos para aumentar a posição direcional da carteira...", "b": "Solicitar novos aportes ao cliente...", "c": "Recalcular o Back Test da carteira de investimentos.", "d": "Acionar o Stop Loss."}},
+                {"id": "57 [207329]", "question": "Considere as seguintes afirmativas sobre o Tracking Error:<br>I - Serve para mensurar o risco do ativo não entregar o seu devido benchmark.<br>II - Quanto maior o seu valor, maiores são as oscilações perante o benchmark.<br>III - Quanto menor o índice, menor a aderência do fundo em relação ao seu parâmetro de performance.", "options": {"a": "I, apenas", "b": "II, apenas", "c": "I e II, apenas", "d": "I, II e III"}},
+                {"id": "58 [306408]", "question": "Considere que no último ano o Ibovespa teve retorno de 30%, desvio padrão de 23%, beta de 2,0 e a TLR foi de 5%. Avalie os fundos abaixo e indique quais foram melhores que o Ibovespa segundo índice de Sharpe:", "options": {"a": "A e B.", "b": "B e C.", "c": "C e D.", "d": "B e D."}},
+                {"id": "59 [102316]", "question": "Em um processo de API qual dos fatores abaixo não é levado em consideração:", "options": {"a": "Situação financeira.", "b": "Objetivo de investimento.", "c": "Experiência em investimento.", "d": "Cenário macroeconômico."}},
+                {"id": "60 [102337]", "question": "Segundo a Resolução nº 30 da CVM, os profissionais que fazem recomendação de produtos de investimento para clientes têm o dever, dentre outras atribuições, de verificar se<br>I - a situação financeira do cliente é compatível com o produto, serviço ou operação apresentada.<br>II - o produto, serviço ou operação é adequado aos objetivos de investimento do cliente.<br>III - o cliente possui conhecimento necessário para compreender os riscos relacionados ao produto, serviço ou operação apresentada.<br>Está correto o que se afirma em", "options": {"a": "I e III, apenas.", "b": "I, II e III.", "c": "II e III, apenas.", "d": "I e II, apenas."}},
+                {"id": "61 [202608]", "question": "Um investidor, que está considerando adquirir ações de uma empresa, assiste a uma palestra onde o apresentador fornece apenas dados positivos sobre a companhia, enaltecendo o retorno acima de 20% ao ano, registrado nos últimos 3 anos. O investidor decide então, por comprar a ação, mas, quando solicita que o corretor execute a ordem de compra, recebe um relatório afirmando que o retorno dessa ação ajustado ao risco nos últimos 3 anos, foi bastante desfavorável. Isso faz com que o investidor desista de comprar a ação. Nesse caso, pode-se afirmar que esse investidor apresenta o comportamento viesado conhecido por:", "options": {"a": "Framing", "b": "Auto Atribuição", "c": "Desconto Hiperbólico", "d": "Aversão a perdas"}},
+                {"id": "62 [202649]", "question": "Segundo a Teoria de Finanças Comportamentais, a estratégia adotada pelos investidores ao tomarem o primeiro preço de compra de uma ação como referência e, a partir desse preço estimar o desempenho futuro dessa ação, é uma consequência da aplicação da heurística denominada:", "options": {"a": "aversão ao risco.", "b": "disponibilidade.", "c": "ancoragem.", "d": "representatividade."}},
+                {"id": "63 [202653]", "question": "Milene foi aconselhada pelo seu gestor de investimento a adquirir ações de uma determinada empresa, pois os analistas atribuíam uma possibilidade de grande retorno no longo prazo. Passados 15 dias da compra, decidiu vende-las com 2,00% de retorno. Nesse caso, ela exibiu o viés da heurística da:", "options": {"a": "disponibilidade.", "b": "do excesso de confiança.", "c": "da ancoragem.", "d": "da aversão à perda."}},
+                {"id": "64 [307107]", "question": "Analisando o gráfico abaixo, podemos afirmar que o investidor apresenta mais claramente o viés comportamental:", "options": {"a": "Representatividade", "b": "Disponibilidade", "c": "Teoria da Perspectiva", "d": "Excesso de Confiança"}},
+                {"id": "65 [307212]", "question": "Rafael recebeu uma herança em 2020 e deseja investir este valor por 18 meses. Considerando que a Selic-Meta fique acima de 8,5% durante todo o período, que a Taxa Referencial seja 2% ao ano e a taxa do CDI seja de 10% ao ano, ambas constantes durante todo o período, qual a aplicação financeira que terá a maior rentabilidade?", "options": {"a": "Tesouro Prefixado (LTN) negociada a R$ 862,07.", "b": "LCI Pós Fixada a 85% CDI.", "c": "CDB Pós Fixado a 100% CDI.", "d": "Caderneta de Poupança."}},
+                {"id": "66 [307217]", "question": "Considere as seguintes afirmativas abaixo em relação a remuneração de um profissional CFP®:<br>I - Pode receber de acordo com a performance da carteira do cliente.<br>II - Pode receber através de indicação e venda de produtos.<br>III - Pode receber um salário fixo dos clientes.", "options": {"a": "I, apenas.", "b": "I e II, apenas.", "c": "II e III, apenas.", "d": "I, II e III."}},
+                {"id": "67 [307223]", "question": "Considere os seguintes fatores:<br>I - Horizonte de tempo.<br>II - Liquidez.<br>III - Regulamentação.<br>IV- Impostos.<br>V - Circunstâncias específicas.<br>VI - Expectativa para o mercado de capitais.<br>São consideradas restrições do investidor a serem explicitadas em um IPS (Política de Investimentos):", "options": {"a": "I, II, III e IV, apenas.", "b": "I, II, III, IV e V, apenas.", "c": "III, IV, V e VI, apenas.", "d": "I, II, III, IV, V e VI."}},
+                {"id": "68 [307248]", "question": "Dentre as alternativas abaixo, com base nos padrões da PLANEJAR (Associação Brasileira de Planejadores Financeiros), aquela que não faz parte das etapas de elaboração de um planejamento financeiro pessoal é:", "options": {"a": "Identificar os problemas legais do cliente que afetem o plano financeiro pessoal.", "b": "Medir o progresso em direção à conquista dos objetivos do cliente.", "c": "Executar a implementação das recomendações apresentadas ao cliente.", "d": "Realizar análise fundamentalista ou técnica de ações de companhias brasileiras adquiridas pelo cliente."}},
+                {"id": "69 [307264]", "question": "No processo de planejamento financeiro descritos pela Planejar, são atividades que fazem parte da fase de Coleta:<br>I - Determinar a tolerância do cliente ao risco de investimento.<br>II - Determinar as características das apólices de seguro.<br>III - Calcular os possíveis custos em função da morte.", "options": {"a": "I, apenas.", "b": "I e II, apenas.", "c": "II e III, apenas.", "d": "I, II e III."}},
+                {"id": "70 [307267]", "question": "Uma carteira de investimentos, possui a seguinte composição:<br>Qual é o fator que mais poderá prejudicar a performance desta carteira?", "options": {"a": "Queda da inflação.", "b": "Queda da taxa Selic.", "c": "Aumento da inflação.", "d": "Aumento da taxa Selic."}}
+            ];
+            
+            const answers = {
+                "01 [101138]": "c", "02 [101150]": "d", "03 [102522]": "a", "04 [202502]": "a", "05 [102118]": "c",
+                "06 [102228]": "c", "07 [103143]": "c", "08 [203134]": "c", "09 [203147]": "b", "10 [203150]": "c",
+                "11 [302110]": "c", "12 [302280]": "a", "13 [302337]": "b", "14 [104186]": "d", "15 [204120]": "c",
+                "16 [303130]": "b", "17 [303510]": "b", "18 [302354]": "b", "19 [302368]": "c", "20 [104201-A]": "b",
+                "21 [303239]": "a", "22 [204387]": "c", "23 [303323]": "a", "24 [204145]": "a", "25 [104462]": "d",
+                "26 [303416]": "c", "27 [303441]": "b", "28 [105123]": "d", "29 [105140]": "a", "30 [105303]": "b",
+                "31 [105337]": "d", "32 [205202]": "a", "33 [205314]": "d", "34 [205323]": "d", "35 [205325]": "a",
+                "36 [105540]": "b", "37 [205504]": "d", "38 [105604]": "a", "39 [105617]": "c", "40 [105627]": "c",
+                "41 [106302]": "d", "42 [106340]": "b", "43 [106522]": "b", "44 [106606]": "a", "45 [305201]": "b",
+                "46 [305211]": "a", "47 [305524]": "a", "48 [305525]": "b", "49 [306313]": "a", "50 [306301]": "a",
+                "51 [306361]": "c", "52 [306513]": "c", "53 [306506]": "c", "54 [306360]": "d", "55 [306601]": "b",
+                "56 [207303]": "d", "57 [207329]": "c", "58 [306408]": "c", "59 [102316]": "d", "60 [102337]": "b",
+                "61 [202608]": "a", "62 [202649]": "c", "63 [202653]": "d", "64 [307107]": "d", "65 [307212]": "a",
+                "66 [307217]": "d", "67 [307223]": "b", "68 [307248]": "d", "69 [307264]": "a", "70 [307267]": "a",
+            };
+
+            q_and_a.forEach(question => {
+                question.correctAnswer = answers[question.id];
+            });
+
+            return q_and_a;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const questionArea = document.getElementById('question-area');
+            const resultsArea = document.getElementById('results-area');
+            const questionIdEl = document.getElementById('question-id');
+            const questionCounterEl = document.getElementById('question-counter');
+            const questionTextEl = document.getElementById('question-text');
+            const optionsContainerEl = document.getElementById('options-container');
+            const nextBtn = document.getElementById('next-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const timerEl = document.getElementById('timer');
+            const accuracyEl = document.getElementById('accuracy');
+            const resultsSummaryEl = document.getElementById('results-summary');
+
+
+            let currentQuestionIndex = 0;
+            let score = 0;
+            let userAnswers = [];
+            let selectedOption = null;
+            let timerInterval;
+            let timeRemaining = 4 * 60 * 60; // 4 horas em segundos
+            let resultsChart = null;
+
+            const all_q_and_a = getSimulado1Data();
+
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+
+                    const hours = Math.floor(timeRemaining / 3600);
+                    const minutes = Math.floor((timeRemaining % 3600) / 60);
+                    const seconds = timeRemaining % 60;
+
+                    timerEl.textContent = 
+                        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        alert("O tempo acabou! O simulado será finalizado.");
+                        showResults();
+                    }
+                }, 1000);
+            }
+
+            function displayQuestion(question) {
+                questionIdEl.textContent = `ID: ${question.id}`;
+                questionCounterEl.textContent = `Questão ${currentQuestionIndex + 1} de ${all_q_and_a.length}`;
+                questionTextEl.innerHTML = question.question; 
+                optionsContainerEl.innerHTML = '';
+                optionsContainerEl.classList.remove('options-locked');
+                selectedOption = null;
+                
+                const shuffledOptions = Object.entries(question.options).sort(() => Math.random() - 0.5);
+                const displayKeys = ['a', 'b', 'c', 'd'];
+
+                shuffledOptions.forEach((shuffledItem, index) => {
+                    const originalKey = shuffledItem[0];
+                    const value = shuffledItem[1];
+                    const displayKey = displayKeys[index];
+
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'option-item';
+                    optionElement.dataset.option = originalKey;
+                    optionElement.innerHTML = `<span class="font-bold mr-2">${displayKey.toUpperCase()})</span> ${value}`;
+                    optionElement.addEventListener('click', () => selectOption(optionElement, originalKey));
+                    optionsContainerEl.appendChild(optionElement);
+                });
+
+                nextBtn.textContent = 'Confirmar Resposta';
+                nextBtn.disabled = true;
+            }
+            
+            function selectOption(element, optionKey) {
+                document.querySelectorAll('.option-item.selected').forEach(el => el.classList.remove('selected'));
+                element.classList.add('selected');
+                selectedOption = optionKey;
+                nextBtn.disabled = false;
+            }
+
+            function checkAnswer() {
+                const question = all_q_and_a[currentQuestionIndex];
+                const correct = selectedOption === question.correctAnswer;
+                
+                userAnswers.push({
+                    question: question.question,
+                    options: question.options,
+                    id: question.id,
+                    userChoice: selectedOption,
+                    correctAnswer: question.correctAnswer,
+                    wasCorrect: correct,
+                });
+
+                if (correct) {
+                    score++;
+                }
+
+                const currentAccuracy = ((score / (currentQuestionIndex + 1)) * 100).toFixed(2);
+                accuracyEl.textContent = `Aproveitamento: ${currentAccuracy}%`;
+
+
+                const options = optionsContainerEl.querySelectorAll('.option-item');
+                options.forEach(option => {
+                    const optionKey = option.dataset.option;
+                    if (optionKey === question.correctAnswer) {
+                        option.classList.add('correct');
+                    }
+                    if (optionKey === selectedOption && !correct) {
+                        option.classList.add('incorrect');
+                    }
+                });
+
+                optionsContainerEl.classList.add('options-locked');
+                nextBtn.textContent = currentQuestionIndex < all_q_and_a.length - 1 ? 'Próxima Questão' : 'Ver Resultados';
+                nextBtn.disabled = false;
+            }
+
+            function showResults() {
+                clearInterval(timerInterval);
+                questionArea.classList.add('hidden');
+                resultsArea.classList.remove('hidden');
+
+                const percentage = ((score / all_q_and_a.length) * 100).toFixed(2);
+                document.getElementById('score').textContent = `${score} / ${all_q_and_a.length}`;
+                document.getElementById('chart-percentage').textContent = `${percentage}%`;
+
+                if(timeRemaining <= 0) {
+                   const timeUpMessage = document.createElement('p');
+                   timeUpMessage.textContent = "Seu tempo acabou!";
+                   timeUpMessage.style.color = '#ef4444';
+                   timeUpMessage.style.fontWeight = 'bold';
+                   timeUpMessage.style.textAlign = 'center';
+                   resultsSummaryEl.prepend(timeUpMessage);
+                }
+
+                const reviewContainer = document.getElementById('review-container');
+                reviewContainer.innerHTML = '';
+                userAnswers.forEach((answer, index) => {
+                    const reviewItem = document.createElement('div');
+                    reviewItem.className = 'p-4 border border-gray-200 rounded-lg';
+                    let optionsHtml = '';
+
+                    // Use the original (non-shuffled) order for review
+                    Object.entries(answer.options).forEach(([key, value]) => {
+                        let classes = 'block p-3 my-1 rounded-md';
+                        if (key === answer.correctAnswer) {
+                            classes += ' correct';
+                        }
+                        if (key === answer.userChoice && !answer.wasCorrect) {
+                            classes += ' incorrect';
+                        }
+                        optionsHtml += `<div class="${classes}"><span class="font-bold">${key.toUpperCase()})</span> ${value}</div>`;
+                    });
+
+                    reviewItem.innerHTML = `
+                        <p class="font-semibold text-gray-500 text-sm">Questão ${index + 1} - ID: ${answer.id}</p>
+                        <p class="font-medium text-gray-800 my-2">${answer.question}</p>
+                        <div>${optionsHtml}</div>
+                    `;
+                    reviewContainer.appendChild(reviewItem);
+                });
+
+                // Chart.js Doughnut Chart
+                if (resultsChart) {
+                    resultsChart.destroy();
+                }
+                const ctx = document.getElementById('results-chart').getContext('2d');
+                resultsChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Acertos', 'Erros'],
+                        datasets: [{
+                            data: [score, all_q_and_a.length - score],
+                            backgroundColor: ['#22c55e', '#ef4444'],
+                            borderColor: '#ffffff',
+                            borderWidth: 4,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function handleNext() {
+                if (nextBtn.textContent.includes('Confirmar')) {
+                    if(selectedOption) {
+                        checkAnswer();
+                    }
+                } else {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < all_q_and_a.length) {
+                        displayQuestion(all_q_and_a[currentQuestionIndex]);
+                    } else {
+                        showResults();
+                    }
+                }
+            }
+            
+            function restartQuiz() {
+                currentQuestionIndex = 0;
+                score = 0;
+                userAnswers = [];
+                resultsArea.classList.add('hidden');
+                questionArea.classList.remove('hidden');
+                timeRemaining = 4 * 60 * 60;
+                accuracyEl.textContent = 'Aproveitamento: -';
+                if (timerInterval) clearInterval(timerInterval);
+                startTimer();
+                displayQuestion(all_q_and_a[currentQuestionIndex]);
+            }
+
+            nextBtn.addEventListener('click', handleNext);
+            restartBtn.addEventListener('click', restartQuiz);
+            
+            // Iniciar o quiz
+            startTimer();
+            displayQuestion(all_q_and_a[currentQuestionIndex]);
+        });
+    </script>
+</body>
+</html>
